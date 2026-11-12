@@ -1,0 +1,11 @@
+Fecha y hora,Símbolo de la acción,Tipo de orden,Estado,Acciones completadas,Acciones pendientes,Precio por acción,Total invertido,Valor comisión,Total estimado
+"20 oct 2026, 9:00 a. m.",DEMO,Venta,Aprobado,100,0,10600,1060000,7437.5,0
+"14 oct 2026, 9:00 a. m.",DEMO,Compra,Aprobado,100,0,10000,1000000,7437.5,0
+"5 oct 2026, 2:30 p. m.",ABC,Venta,Aprobado,300/300,0,5200,1560000,7437.5,0
+"2 oct 2026, 10:00 a. m.",ABC,Compra,Aprobado,200,0,5000,1000000,7437.5,0
+"1 oct 2026, 10:00 a. m.",ABC,Compra,Aprobado,100,0,5100,510000,7437.5,0
+"3 nov 2026, 11:00 a. m.",XYZ,Compra,Aprobado,500,0,2000,1000000,7437.5,0
+"4 nov 2026, 11:00 a. m.",XYZ,Compra,Aprobado,50,0,1900,95000,7437.5,0
+"5 nov 2026, 11:00 a. m.",XYZ,Venta,Aprobado,50,0,1950,97500,7437.5,0
+"6 nov 2026, 11:00 a. m.",QQQ,Compra,Aprobado,10,0,1000,10000,7437.5,0
+"7 nov 2026, 11:00 a. m.",QQQ,Compra,Rechazado,0,10,1000,0,0,0

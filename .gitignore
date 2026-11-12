@@ -1,0 +1,8 @@
+# Datos personales: nunca se suben
+datos/
+trii/
+*.csv
+!tests/fixtures/*.csv
+# Python
+__pycache__/
+*.pyc

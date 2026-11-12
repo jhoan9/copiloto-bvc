@@ -1,0 +1,7 @@
+{
+  "name": "copiloto-bvc",
+  "owner": {"name": "Jhoan Castro Santacruz"},
+  "plugins": [
+    {"name": "copiloto-bvc", "source": "./", "description": "Asistente de decisiones para acciones colombianas (no ejecuta órdenes)."}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "copiloto-bvc",
+  "description": "Asistente de decisiones para acciones colombianas (BVC): reglas de riesgo, plan con comisiones, simulador, calendario de la BVC y orden lista para poner a mano. No ejecuta órdenes.",
+  "version": "0.2.0",
+  "author": {"name": "Jhoan Castro Santacruz"},
+  "license": "MIT",
+  "keywords": ["bvc", "colombia", "acciones", "gestion-de-riesgo", "skills"],
+  "skills": "./skills/"
+}
