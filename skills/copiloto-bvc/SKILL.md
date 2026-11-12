@@ -58,6 +58,24 @@ Reglas para ti:
    ejecuta más abajo.
 6. **No pidas ni guardes** usuarios, contraseñas ni datos de la cuenta de la app.
 
+## Cómo presentar los resultados (obligatorio)
+
+- **Muestra la salida del comando tal cual,** dentro de un bloque de código. Después agrega
+  máximo 3 líneas de explicación. No la rehagas como tabla ni cambies el formato de los
+  números: así se colaron "$4,330" y "1 154 734 acciones" que no eran lo que el agente calculó.
+- **Si el comando termina en "NO SE CREÓ EL PLAN",** muestra ese mensaje, corrige lo que dice
+  y vuelve a correrlo una vez. No armes un plan por tu cuenta.
+- **Para explicar un BLOQUEA,** copia los motivos que da el agente. No los reinterpretes.
+
+## Cantidad y monto (obligatorio)
+
+- **Nunca calcules la cantidad de acciones tú.** La calculan las reglas.
+- **Si el usuario dice un monto** ("invierte 5 millones"), usa `--valor 5000000`. El agente
+  compra lo que alcance sin pasarse de las reglas, y te dice qué lo limitó.
+- **Usa `--cantidad` solo si el usuario da un número de acciones explícito.**
+- **El objetivo es un PRECIO mayor que la entrada** (`--objetivo 4550`) o un porcentaje
+  (`--objetivo pct:6`). Nunca escribas `--objetivo 4.55` para decir $4.550.
+
 ## Números y precios (obligatorio)
 
 - **Pasa los precios en pesos, sin separadores:** `--entrada 2515`, no `2.515`. En la salida
@@ -79,7 +97,7 @@ app). Para cada posición sale MANTENER, VENDER, TOMAR GANANCIA o REVISAR, con s
 1. `evento listar`. Si faltan fechas, búscalas en la web y usa
    `evento agregar TICKER AAAA-MM-DD resultados|exdividendo`.
 2. `precio TICKER`.
-3. `plan TICKER --entrada PRECIO [--stop pct:3|precio:X|atr:2] [--mercado PRECIO_APP] --guardar`.
+3. `plan TICKER --entrada PRECIO [--valor MONTO] [--stop pct:3|precio:X|atr:2] [--objetivo PRECIO|pct:6] [--mercado PRECIO_APP] --guardar`.
    Calcula la cantidad con las comisiones incluidas.
 4. `simular TICKER [--stop 5 --objetivo 10]`. Si sale "En contra" o "Sin ventaja clara" (un
    resultado medio entre -0,5% y +0,5% neto), dilo claramente.
@@ -107,7 +125,7 @@ diarios.
 | `reloj [--festivos]` | Si la BVC está abierta, en qué fase, la próxima rueda y los festivos |
 | `precio TICKER` | Último precio (Yahoo o `datos/precios.json`) |
 | `cartera [--precio T=V]` | Posiciones abiertas contra tus reglas |
-| `plan TICKER --entrada X` | Stop, objetivo, cantidad, punto de equilibrio y fechas límite |
+| `plan TICKER --entrada X [--valor MONTO]` | Stop, objetivo, cantidad, punto de equilibrio y fechas límite |
 | `riesgo TICKER` | PASA o BLOQUEA del plan guardado |
 | `simular TICKER` | Historia y Montecarlo con velas diarias |
 | `ticket compra/venta TICKER` | Orden escrita para la app, y registro en `datos/diario.csv` |

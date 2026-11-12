@@ -304,3 +304,22 @@ class TestExportes(unittest.TestCase):
                     os.environ.pop("COPILOTO_DIR", None)
                 else:
                     os.environ["COPILOTO_DIR"] = viejo
+
+
+class TestPlanEntradasMalas(unittest.TestCase):
+    def test_valor_limita_la_cantidad(self):
+        pl = planmod.crear("CELSIA", 4330, CFG, valor=1_000_000, stop_modo="pct:3", hoy=dt.date(2026, 11, 11))
+        self.assertEqual(pl["cantidad"], 1_000_000 // 4330)
+        self.assertIn("monto que pediste", pl["cantidad_limitada_por"])
+
+    def test_objetivo_por_debajo_de_la_entrada_da_pista(self):
+        with self.assertRaises(ValueError) as e:
+            planmod.crear("CELSIA", 4330, CFG, objetivo="4.55", hoy=dt.date(2026, 11, 11))
+        self.assertIn("4550", str(e.exception))
+        pl = planmod.crear("CELSIA", 4330, CFG, objetivo="pct:6", hoy=dt.date(2026, 11, 11))
+        self.assertAlmostEqual(pl["objetivo"], 4330 * 1.06, places=1)
+
+    def test_cantidad_mayor_al_capital_no_se_acepta(self):
+        with self.assertRaises(ValueError) as e:
+            planmod.crear("CELSIA", 4330, CFG, cantidad=1_154_734, hoy=dt.date(2026, 11, 11))
+        self.assertIn("--valor", str(e.exception))

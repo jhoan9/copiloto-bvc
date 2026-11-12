@@ -173,7 +173,7 @@ usa `python3` y `/`.
 | `reloj [--festivos]` | `reloj --festivos` |
 | `precio TICKER` | `precio ECOPETROL` |
 | `cartera [--precio T=V]` | `cartera --precio NUCO=39000` |
-| `plan TICKER --entrada X` | `plan ECOPETROL --entrada 2515 --guardar` (opciones: `--stop pct:3`, `precio:2440`, `atr:2`; `--mercado 2520`) |
+| `plan TICKER --entrada X` | `plan CELSIA --entrada 4330 --valor 5000000 --guardar` (opciones: `--valor` pesos a invertir; `--stop pct:3`, `precio:4200` o `atr:2`; `--objetivo 4550` o `pct:6`; `--mercado 4335`) |
 | `riesgo TICKER` | `riesgo ECOPETROL` |
 | `simular TICKER` | `simular ECOPETROL --stop 5 --objetivo 10` |
 | `ticket compra TICKER` | `ticket compra ECOPETROL --estrategia "rebote" --registrar` |
@@ -203,7 +203,8 @@ reinicia OpenCode.
 | `Configuration is invalid ... skills` al abrir OpenCode | Tu versión de OpenCode usa otro formato. Este repo trae `"skills": {"paths": ["./skills"]}`. Si tu versión pide una lista, cámbialo por `"skills": ["./skills"]` |
 | "No encontré el export de órdenes" | Corre el comando `archivos`: te dice dónde buscó y por qué descartó cada archivo. Exporta de nuevo a Descargas o usa `--csv "RUTA"` |
 | El agente busca archivos una y otra vez | Recuérdale: "usa el comando archivos, no busques en el disco". Si sigue, cambia de modelo |
-| Precios raros ($3, $4) o cantidades enormes | El modelo leyó mal el número. La regla "precio de entrada" lo bloquea. Pide el plan de nuevo o cambia de modelo |
+| Precios raros ($3, $4) o cantidades enormes | El modelo leyó mal el número. El agente lo frena: "precio de entrada" bloquea la operación, y "NO SE CREÓ EL PLAN" sale si el objetivo queda por debajo de la entrada o la cantidad supera tu capital. Pide montos en palabras ("invierte 5 millones"), que el agente convierte en `--valor` |
+| La cantidad sale menor que el monto que pediste | Lo limita la pérdida máxima por operación (1% del capital por defecto). La línea del plan dice qué lo limitó. Para comprar más, usa un stop más corto o, si de verdad quieres arriesgar más, sube `max_perdida_operacion_pct` en `datos\config.json` |
 | Yahoo no trae el precio | Dalo a mano: `--precio NUCO=39000` (cartera) o `--mercado 39000` (plan y riesgo), o ponlo en `datos\precios.json` |
 | `python` no se reconoce | Instala Python y marca "Add python.exe to PATH", o usa `py` en vez de `python` |
 | Errores con tildes en la consola | Ya está resuelto en el programa. Si persiste, corre `chcp 65001` antes |

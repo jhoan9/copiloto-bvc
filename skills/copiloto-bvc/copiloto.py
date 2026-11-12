@@ -9,7 +9,7 @@ Solo biblioteca estándar de Python 3.8+.
   python3 copiloto.py reloj [--festivos]
   python3 copiloto.py precio CEMARGOS
   python3 copiloto.py cartera [--csv RUTA] [--precio CEMARGOS=11200 ...]
-  python3 copiloto.py plan CEMARGOS --entrada 10800 [--stop pct:3|precio:10450|atr:2] [--guardar]
+  python3 copiloto.py plan CEMARGOS --entrada 10800 [--valor 5000000] [--stop pct:3|precio:10450|atr:2] [--objetivo pct:6] [--guardar]
   python3 copiloto.py riesgo CEMARGOS
   python3 copiloto.py simular NVDACO [--stop 3 --objetivo 4.5 --dias 20 --valor 5000000]
   python3 copiloto.py ticket compra CEMARGOS [--registrar]
@@ -197,18 +197,22 @@ def cmd_plan(args, cfg):
         pos = cartera.posiciones_abiertas(cartera.armar_pares(cartera.leer_ordenes(args.csv)))
     except Exception:
         pass
-    pl = planmod.crear(t, args.entrada, cfg, args.stop, args.objetivo, cantidad=args.cantidad, velas=velas,
-                       posicion_actual=pos.get(t), hoy=hoy, motivo=args.motivo or "")
+    try:
+        pl = planmod.crear(t, args.entrada, cfg, args.stop, args.objetivo, cantidad=args.cantidad, velas=velas,
+                           posicion_actual=pos.get(t), hoy=hoy, motivo=args.motivo or "", valor=args.valor)
+    except ValueError as e:
+        sys.exit("NO SE CREÓ EL PLAN: %s" % e)
     ver = _riesgo(pl, cfg, pos, args, hoy)
     if args.guardar:
         planes = C.read_json(C.path("planes.json"), {}) or {}
         planes[t] = pl
         C.write_json(C.path("planes.json"), planes)
-    txt = ("PLAN %s · entrada %s · %d acciones (%s, limitada por %s)\n"
+    txt = ("PLAN %s · entrada %s · %d acciones (%s = %.2f millones, limitada por %s)\n"
            "  Stop %s (%s) · objetivo %s (%s) · equilibrio %s\n"
            "  Si toca el stop: %s · si llega al objetivo: %s · ganancia/riesgo neto %.2f\n"
            "  Si sigue en rojo el %s, salir. Fecha máxima: %s.\n"
-           % (t, m(pl["entrada"]), pl["cantidad"], m(pl["valor_orden"]), pl["cantidad_limitada_por"], m(pl["stop"]),
+           % (t, m(pl["entrada"]), pl["cantidad"], m(pl["valor_orden"]), pl["valor_orden"] / 1e6,
+              pl["cantidad_limitada_por"], m(pl["stop"]),
               pl["stop_desc"], m(pl["objetivo"]), pl["objetivo_desc"], m(pl["precio_equilibrio"]),
               m(-pl["perdida_neta_en_stop"]), m(pl["ganancia_neta_en_objetivo"]), pl["rr_neto"],
               pl["salir_si_en_rojo_el"], pl["salir_a_mas_tardar_el"]))
@@ -367,7 +371,10 @@ def main(argv=None):
     p = sub.add_parser("precio"); p.add_argument("ticker"); p.add_argument("--sin-cache", action="store_true")
     p = sub.add_parser("cartera"); p.add_argument("--csv"); p.add_argument("--precio", action="append")
     p = sub.add_parser("plan"); p.add_argument("ticker"); p.add_argument("--entrada", type=num, required=True)
-    p.add_argument("--stop"); p.add_argument("--objetivo", type=num); p.add_argument("--cantidad", type=int)
+    p.add_argument("--stop", help="pct:3 | precio:4200 | atr:2")
+    p.add_argument("--objetivo", help="precio (4550) | pct:6 | r:2")
+    p.add_argument("--valor", type=num, help="pesos a invertir (ej. 5000000): el agente calcula la cantidad")
+    p.add_argument("--cantidad", type=int, help="mejor no usarlo: la cantidad la calculan las reglas")
     p.add_argument("--motivo"); p.add_argument("--guardar", action="store_true"); p.add_argument("--csv")
     p.add_argument("--mercado", type=num, help="precio actual que ves en la app, si Yahoo no cuadra")
     p = sub.add_parser("riesgo"); p.add_argument("ticker"); p.add_argument("--csv"); p.add_argument("--mercado", type=num)
