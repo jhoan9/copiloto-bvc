@@ -40,14 +40,19 @@ def leer_ordenes(export_path=None):
         ords = []
     man = C.path("operaciones_manuales.csv")
     if ords and os.path.exists(man):
-        ya = {(o["fecha"], o["ticker"], o["tipo"], o["cantidad"], o["precio"]) for o in ords}
         try:
             extra = exportes.leer_export(man, origen="manual")[0]
         except exportes.ExportError as e:
             extra = []
             ULTIMO_EXPORT["error_manuales"] = str(e)
-        extra = [o for o in extra if (o["fecha"], o["ticker"], o["tipo"], o["cantidad"], o["precio"]) not in ya]
+        # Una operación manual que ya llegó en un export nuevo (mismo día, acción, tipo y
+        # cantidad, precio ±1%) no se cuenta dos veces.
+        extra = [o for o in extra if not any(
+            x["fecha"].date() == o["fecha"].date() and x["ticker"] == o["ticker"] and x["tipo"] == o["tipo"]
+            and x["cantidad"] == o["cantidad"] and abs(x["precio"] - o["precio"]) <= 0.01 * o["precio"] for x in ords)]
         ULTIMO_EXPORT["manuales"] = len(extra)
+        if extra:
+            ULTIMO_EXPORT["ultima_manual"] = max(o["fecha"] for o in extra)
         ords = sorted(ords + extra, key=lambda o: o["fecha"])
     _CACHE[export_path] = ords
     return list(ords)
@@ -134,3 +139,70 @@ def operaciones_cerradas(lotes):
             r["dias"] = (r["fecha_ultima_venta"].date() - r["fecha_compra"].date()).days
             out.append(r)
     return out
+
+
+def fecha_de_los_datos():
+    """Hasta qué día están al día tus datos: el día en que exportaste (o la última orden o
+    la última operación manual, si son posteriores). None si no hay export."""
+    i = ULTIMO_EXPORT
+    if not i.get("ruta"):
+        return None
+    fechas = [i["hasta"].date()]
+    if i.get("ultima_manual"):
+        fechas.append(i["ultima_manual"].date())
+    import datetime as _dt
+    try:
+        fechas.append(_dt.date.fromtimestamp(os.path.getmtime(i.get("copiado_desde") or i["ruta"])))
+    except OSError:
+        pass
+    conf = (C.read_json(C.path("estado.json"), {}) or {}).get("confirmado_hasta")
+    if conf:
+        fechas.append(_dt.date.fromisoformat(conf))
+    return max(fechas)
+
+
+def confirmar_al_dia(fecha):
+    """El usuario confirmó que no hay más operaciones fuera de sus datos hasta `fecha`."""
+    est = C.read_json(C.path("estado.json"), {}) or {}
+    est["confirmado_hasta"] = fecha.isoformat()
+    C.write_json(C.path("estado.json"), est)
+
+
+def estado_capital(pos, cfg, efectivo=None):
+    """Capital, lo invertido (al costo) en posiciones abiertas y el efectivo disponible.
+
+    El efectivo sale de, en orden: el valor que pase el usuario (--efectivo, lo que muestra
+    la app), `efectivo_cop` en la config, o capital_cop menos el costo de lo abierto."""
+    capital = cfg["capital_cop"]
+    invertido = sum(p["costo"] for p in (pos or {}).values())
+    if efectivo is not None:
+        disp, fuente = float(efectivo), "dado por ti"
+    elif cfg.get("efectivo_cop") is not None:
+        disp, fuente = float(cfg["efectivo_cop"]), "efectivo_cop en config.json"
+    else:
+        disp, fuente = max(0.0, capital - invertido), "estimado: capital - costo de lo abierto"
+    return {"capital": capital, "invertido": round(invertido, 2), "disponible": round(disp, 2),
+            "fuente_disponible": fuente}
+
+
+COLUMNAS_MANUALES = ["Fecha y hora", "Símbolo de la acción", "Tipo de orden", "Estado", "Acciones completadas",
+                     "Acciones pendientes", "Precio por acción", "Total invertido", "Valor comisión",
+                     "Total estimado"]
+
+
+def registrar_operacion(tipo, ticker, cantidad, precio, fecha, comision):
+    """Agrega una compra o venta ya ejecutada a datos/operaciones_manuales.csv."""
+    import csv
+    p = C.path("operaciones_manuales.csv")
+    nuevo = not os.path.exists(p)
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    total = cantidad * precio
+    est = total + comision if tipo == "Compra" else total - comision
+    with open(p, "a", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        if nuevo:
+            w.writerow(COLUMNAS_MANUALES)
+        w.writerow([fecha.strftime("%Y-%m-%d %H:%M"), ticker, tipo, "Aprobado", cantidad, 0, precio,
+                    round(total, 2), round(comision, 2), round(est, 2)])
+    _CACHE.clear()
+    return p

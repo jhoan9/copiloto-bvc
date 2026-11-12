@@ -323,3 +323,49 @@ class TestPlanEntradasMalas(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             planmod.crear("CELSIA", 4330, CFG, cantidad=1_154_734, hoy=dt.date(2026, 11, 11))
         self.assertIn("--valor", str(e.exception))
+
+
+class TestEfectivoYOperaciones(unittest.TestCase):
+    def test_sin_efectivo_la_cantidad_es_cero_y_bloquea(self):
+        pl = planmod.crear("CELSIA", 4330, CFG, valor=5_000_000, efectivo=500_000, hoy=dt.date(2026, 11, 11))
+        self.assertLessEqual(pl["costo_total"], 500_000)
+        self.assertIn("efectivo disponible", pl["cantidad_limitada_por"])
+        pl = planmod.crear("CELSIA", 4330, CFG, hoy=dt.date(2026, 11, 11))
+        ver = reglas.revisar_plan(pl, CFG, {}, 0, [], dt.date(2026, 11, 11), precio_mercado=4330, efectivo=100_000)
+        self.assertTrue(any(c["regla"] == "efectivo" and c["estado"] == "BLOQUEA" for c in ver["checks"]))
+
+    def test_estado_capital(self):
+        pos = {"A": {"costo": 6_000_000}, "B": {"costo": 3_000_000}}
+        cfg = dict(CFG, capital_cop=10_000_000, efectivo_cop=None)
+        self.assertEqual(cartera.estado_capital(pos, cfg)["disponible"], 1_000_000)
+        self.assertEqual(cartera.estado_capital(pos, cfg, efectivo=2_500_000)["disponible"], 2_500_000)
+
+    def test_venta_registrada_cierra_la_posicion_y_no_se_duplica(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as tmp:
+            viejo = os.environ.get("COPILOTO_DIR")
+            os.environ["COPILOTO_DIR"] = tmp
+            try:
+                exp = os.path.join(tmp, "informacion_financiera.csv")
+                with open(exp, "w", encoding="utf-8") as f:
+                    f.write("Fecha y hora,Símbolo de la acción,Tipo de orden,Estado,Acciones completadas,"
+                            "Acciones pendientes,Precio por acción,Total invertido,Valor comisión,Total estimado\n"
+                            "\"2 nov 2026, 9:40 a. m.\",DEMO,Compra,Aprobado,100,0,10000,1000000,7437.5,0\n")
+                cartera._CACHE.clear()
+                pos = cartera.posiciones_abiertas(cartera.armar_pares(cartera.leer_ordenes()))
+                self.assertEqual(pos["DEMO"]["cantidad"], 100)
+                cartera.registrar_operacion("Venta", "DEMO", 100, 10500, dt.datetime(2026, 11, 10, 11, 0), 7437.5)
+                pos = cartera.posiciones_abiertas(cartera.armar_pares(cartera.leer_ordenes()))
+                self.assertNotIn("DEMO", pos)
+                # llega un export nuevo con esa misma venta (otra hora, precio redondeado): no se duplica
+                with open(exp, "a", encoding="utf-8") as f:
+                    f.write("\"10 nov 2026, 11:03 a. m.\",DEMO,Venta,Aprobado,100,0,10500.4,1050040,7437.5,0\n")
+                cartera._CACHE.clear()
+                ords = cartera.leer_ordenes()
+                self.assertEqual(sum(1 for o in ords if o["tipo"] == "Venta"), 1)
+            finally:
+                cartera._CACHE.clear()
+                if viejo is None:
+                    os.environ.pop("COPILOTO_DIR", None)
+                else:
+                    os.environ["COPILOTO_DIR"] = viejo

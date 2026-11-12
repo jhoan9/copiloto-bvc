@@ -24,7 +24,7 @@ DESVIO_BLOQUEA = 0.15  # a más de 15%: casi seguro un número mal leído
 
 
 def revisar_plan(plan, cfg, posiciones=None, resultado_mes=0.0, eventos=None, hoy=None,
-                 precio_mercado=None, fuente_precio=""):
+                 precio_mercado=None, fuente_precio="", efectivo=None):
     r = cfg["reglas"]
     hoy = hoy or dt.date.fromisoformat(plan["creado"])
     capital = cfg["capital_cop"]
@@ -50,6 +50,9 @@ def revisar_plan(plan, cfg, posiciones=None, resultado_mes=0.0, eventos=None, ho
         if e < 100:
             add(BLOQUEA, "precio de entrada", "Una entrada de $%s es sospechosa: ¿era en miles? Escribe el precio "
                 "en pesos sin puntos (2515, no 2.515)." % _m(e))
+    if efectivo is not None and plan["costo_total"] > efectivo + 1:
+        add(BLOQUEA, "efectivo", "La compra cuesta $%s con comisión y tienes $%s disponibles. Si vendiste algo "
+            "que no está en tus datos, regístralo con `operacion agregar venta`." % (_m(plan["costo_total"]), _m(efectivo)))
     if plan["cantidad"] <= 0:
         add(BLOQUEA, "cantidad", "Con tus límites la cantidad sale en 0 (%s)." % plan["cantidad_limitada_por"])
     v = plan["valor_orden"]

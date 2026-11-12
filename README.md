@@ -37,7 +37,8 @@ la orden escrita. Tú la pones en la app.
 |---|---|
 | **Cartera** | Lee el export de tu app, arma cada compra con sus ventas y revisa las posiciones abiertas: MANTENER, VENDER, TOMAR GANANCIA o REVISAR |
 | **Plan** | Stop, objetivo, cantidad según tu pérdida máxima, comisiones y punto de equilibrio |
-| **Riesgo** | PASA o BLOQUEA. Revisa tamaño, concentración, pérdida máxima, ganancia/riesgo, promediar a la baja, pérdida del mes, resultados próximos y que el precio de entrada sea realista |
+| **Riesgo** | PASA o BLOQUEA. Revisa efectivo disponible, tamaño, concentración, pérdida máxima, ganancia/riesgo, promediar a la baja, pérdida del mes, resultados próximos y que el precio de entrada sea realista |
+| **Operaciones recientes** | Si tus datos no están al día, pregunta qué vendiste o compraste desde el último export, y lo registra |
 | **Simulador** | Historia real y Montecarlo (10.000 caminos) con velas diarias |
 | **Calendario BVC** | Festivos de cualquier año, horario de verano de Nueva York y subasta de cierre |
 | **Ticket** | Los pasos para poner la orden a mano (límite, stop y objetivo), más un diario de decisiones |
@@ -118,7 +119,8 @@ repositorio.
 |---|---|---|
 | `config.json` | Capital, plan de comisiones, reglas, símbolos | `init` / tú |
 | `informacion_financiera.csv` | Copia de tu export de órdenes | el agente, solo |
-| `operaciones_manuales.csv` | Operaciones que la app no exporta (por ejemplo, una venta en una OPA o readquisición). Mismas columnas del export | tú (opcional) |
+| `operaciones_manuales.csv` | Operaciones que aún no están en el export, o que la app no exporta (por ejemplo, una venta en una OPA o readquisición). Cuando llegan en un export nuevo, no se cuentan dos veces | `operacion agregar` / tú |
+| `estado.json` | Hasta qué día confirmaste que tus datos están al día | `operacion` |
 | `diario.csv` | Tus decisiones: qué compraste o vendiste, por qué, y si fue una excepción | `ticket --registrar` |
 | `eventos.json` | Fechas de resultados y dividendos | `evento agregar` |
 | `planes.json` | Último plan guardado por acción | `plan --guardar` |
@@ -152,7 +154,8 @@ En OpenCode basta con pedirlo en español. Estos son ejemplos:
 | Probar una regla | "Simula ECOPETROL con stop de 5% y objetivo de 10%" |
 | Eventos | "¿Cuándo presenta resultados Nu? Agrégalo" |
 | Revisión mensual | "¿Cómo me habría ido este año siguiendo las reglas?" |
-| Después de operar | Exporta de nuevo desde la app a Descargas. El siguiente comando lo toma solo |
+| Después de operar | "Vendí 557 CEMARGOS a 10.800 hoy": el agente lo registra. O exporta de nuevo a Descargas y el siguiente comando lo toma solo |
+| Saldo exacto | "Mi saldo disponible en la app es 6.000.000": el agente lo usa en vez del estimado |
 
 **Revisa siempre lo que te muestra el agente:**
 
@@ -179,6 +182,8 @@ usa `python3` y `/`.
 | `ticket compra TICKER` | `ticket compra ECOPETROL --estrategia "rebote" --registrar` |
 | `ticket venta TICKER` | `ticket venta NUCO --cantidad 102 --precio 42000 --motivo "regla 10 días" --registrar` |
 | `evento agregar/listar` | `evento agregar NUCO 2026-11-12 resultados` |
+| `operacion agregar` | `operacion agregar venta CEMARGOS --cantidad 557 --precio 10800 --fecha 2026-11-10 --hora 10:30` |
+| `operacion confirmar` | Confirma que no hubo más operaciones desde el último export (no vuelve a preguntar hoy) |
 | `historial` | `historial --desde 2026-01-01 --con-historico --detalle` |
 
 **Precios:** escríbelos en pesos y sin puntos, por ejemplo `2515`. Si escribes `2.515`, el
@@ -204,6 +209,7 @@ reinicia OpenCode.
 | "No encontré el export de órdenes" | Corre el comando `archivos`: te dice dónde buscó y por qué descartó cada archivo. Exporta de nuevo a Descargas o usa `--csv "RUTA"` |
 | El agente busca archivos una y otra vez | Recuérdale: "usa el comando archivos, no busques en el disco". Si sigue, cambia de modelo |
 | Precios raros ($3, $4) o cantidades enormes | El modelo leyó mal el número. El agente lo frena: "precio de entrada" bloquea la operación, y "NO SE CREÓ EL PLAN" sale si el objetivo queda por debajo de la entrada o la cantidad supera tu capital. Pide montos en palabras ("invierte 5 millones"), que el agente convierte en `--valor` |
+| "No hay efectivo para comprar" | Todo tu capital está en posiciones abiertas. Si vendiste algo después del export, díselo al agente (lo registra con `operacion agregar`). Si tu saldo en la app es otro, pásalo con `--efectivo` o ponlo en `efectivo_cop` en `datos\config.json` |
 | La cantidad sale menor que el monto que pediste | Lo limita la pérdida máxima por operación (1% del capital por defecto). La línea del plan dice qué lo limitó. Para comprar más, usa un stop más corto o, si de verdad quieres arriesgar más, sube `max_perdida_operacion_pct` en `datos\config.json` |
 | Yahoo no trae el precio | Dalo a mano: `--precio NUCO=39000` (cartera) o `--mercado 39000` (plan y riesgo), o ponlo en `datos\precios.json` |
 | `python` no se reconoce | Instala Python y marca "Add python.exe to PATH", o usa `py` en vez de `python` |

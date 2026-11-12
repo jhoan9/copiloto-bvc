@@ -15,6 +15,8 @@ import os
 DEFAULTS = {
     # --- Cuenta ---
     "capital_cop": 10000000,          # capital total invertible: CÁMBIALO al tuyo
+    "efectivo_cop": None,             # saldo disponible en la app; si es null se estima
+                                      # como capital_cop menos el costo de lo abierto
     "plan_comisiones": "pro",          # "pro" o "estandar" (tarifas de abajo)
     # --- Comisiones por orden (incluyen IVA 19%) ---
     # Valores por defecto: tarifas publicadas por la app Trii en 2026 (planes Pro y estándar).

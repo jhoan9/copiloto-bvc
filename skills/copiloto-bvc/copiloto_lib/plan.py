@@ -63,7 +63,7 @@ def calcular_objetivo(entrada, objetivo, riesgo_accion, cfg):
 
 
 def crear(ticker, entrada, cfg, stop_modo=None, objetivo=None, capital=None, cantidad=None,
-          velas=None, posicion_actual=None, hoy=None, motivo="", valor=None):
+          velas=None, posicion_actual=None, hoy=None, motivo="", valor=None, efectivo=None):
     """Plan de compra. La cantidad sale de las reglas; con `valor` (pesos a invertir) se
     toma el menor entre ese monto y lo que permiten las reglas. Mejor no fijar `cantidad`."""
     r = cfg["reglas"]
@@ -85,6 +85,11 @@ def crear(ticker, entrada, cfg, stop_modo=None, objetivo=None, capital=None, can
                     (math.floor(r["max_orden_cop"] / entrada), "orden máxima")]
         if valor:
             opciones.append((math.floor(valor / entrada), "monto que pediste (%s)" % _pesos(valor)))
+        if efectivo is not None:
+            q = math.floor(max(0.0, efectivo) / entrada)
+            while q > 0 and q * entrada + com.comision(q * entrada, cfg) > efectivo:
+                q -= 1
+            opciones.append((q, "efectivo disponible (%s)" % _pesos(efectivo)))
         cantidad, limitante = min(opciones)
         cantidad = max(0, cantidad)
     else:

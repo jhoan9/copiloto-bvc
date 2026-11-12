@@ -67,6 +67,25 @@ Reglas para ti:
   y vuelve a correrlo una vez. No armes un plan por tu cuenta.
 - **Para explicar un BLOQUEA,** copia los motivos que da el agente. No los reinterpretes.
 
+## Efectivo y operaciones recientes (obligatorio)
+
+El export puede estar desactualizado: el usuario pudo vender algo después de exportarlo.
+`plan` y `cartera` lo tienen en cuenta así:
+
+- **Si la salida empieza con "PREGUNTA AL USUARIO ANTES DE SEGUIR",** haz esa pregunta y
+  espera la respuesta. No presentes el plan como definitivo mientras tanto.
+  - Si vendió o compró algo, registra cada operación con
+    `operacion agregar venta|compra TICKER --cantidad N --precio P --fecha AAAA-MM-DD [--hora HH:MM]`.
+    Usa `--hay-mas` en todas menos la última. Luego vuelve a correr el plan.
+  - Si no hubo nada, corre `operacion confirmar` y vuelve a correr el plan.
+- **Si el plan termina en "NO SE CREÓ EL PLAN: no hay efectivo",** no busques la forma de
+  comprar igual. Muestra el mensaje y pregunta lo que dice. Si el usuario te da el saldo
+  disponible que ve en la app, pásalo con `--efectivo VALOR`.
+- **La cantidad nunca supera el efectivo disponible.** Si no alcanza, la regla "efectivo"
+  da BLOQUEA.
+- **El efectivo estimado es capital menos el costo de lo abierto**, así que no descuenta las
+  pérdidas ya realizadas. Si el usuario da el saldo de la app, usa ese.
+
 ## Cantidad y monto (obligatorio)
 
 - **Nunca calcules la cantidad de acciones tú.** La calculan las reglas.
@@ -90,7 +109,7 @@ Reglas para ti:
 ## Flujos
 
 **Revisar la cartera:**
-`reloj`, y luego `cartera` (con `--precio NUCO=39000 ...` si el usuario te da precios de la
+`reloj`, y luego `cartera` (con `--efectivo SALDO` si el usuario da su saldo disponible) (con `--precio NUCO=39000 ...` si el usuario te da precios de la
 app). Para cada posición sale MANTENER, VENDER, TOMAR GANANCIA o REVISAR, con sus razones.
 
 **Antes de comprar** (siempre en este orden):
@@ -130,6 +149,9 @@ diarios.
 | `simular TICKER` | Historia y Montecarlo con velas diarias |
 | `ticket compra/venta TICKER` | Orden escrita para la app, y registro en `datos/diario.csv` |
 | `evento agregar/listar` | Fechas de resultados y dividendos |
+| `operacion agregar venta\|compra TICKER --cantidad --precio --fecha` | Registra una operación ya ejecutada que aún no está en el export |
+| `operacion confirmar` | El usuario confirma que no hubo más operaciones; no vuelve a preguntar hoy |
+| `operacion listar` | Operaciones registradas a mano |
 | `historial` | Qué habrían cambiado tus reglas en tu historial |
 
 Todos aceptan `--json`; los que leen órdenes aceptan `--csv RUTA`.
